@@ -5,8 +5,8 @@ With OCR support for image-based PDFs and PDF file retrieval
 """
 import os
 
-# Disable Chroma telemetry logs
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY_IMPL"] = "none"
 
 # Hide warnings
 import warnings
@@ -68,8 +68,7 @@ if not POPPLER_PATH:
     print("   Download the latest release (e.g., Release-24.08.0-0.zip)")
     print("   Extract to: C:\\Program Files\\poppler\\")
 
-import chromadb 
-chromadb.api.client.SharedSystemClient.clear_system_cache()
+
 
 # ========== SIMPLE TRANSLATOR (No external APIs needed) ==========
 class SimpleTranslator:

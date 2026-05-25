@@ -21,6 +21,12 @@ from translation.translation_wrapper import TranslationWrapper
 # Initialize FastAPI
 app = FastAPI(title="Nexus AI - Multilingual Academic Assistant")
 
+app.mount(
+    "/exported_pdfs",
+    StaticFiles(directory="../exported_pdfs"),
+    name="exported_pdfs"
+)
+
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -74,23 +80,51 @@ async def health_check():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Send a message to the chatbot"""
+
     try:
         bot, trans = get_chatbot()
-        
+
+        print(f"📩 Incoming Message: {request.message}")
+
         # Process through translation wrapper
         result = trans.process_query(request.message)
-        
-        return ChatResponse(
-            response=result['response_translated'],
-            detected_language=result['detected_language'],
-            sources=result.get('sources', []),
-            is_pdf_request=result.get('is_pdf_request', False),
-            pdf_path=result.get('pdf_result', {}).get('pdf_path'),
-            pdf_name=result.get('pdf_result', {}).get('pdf_name')
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
+        print("✅ Result Generated Successfully")
+        print(result)
+
+        # Safe serialization
+        detected_lang = str(result.get('detected_language', 'en'))
+
+        sources = result.get('sources', [])
+        if not isinstance(sources, list):
+            sources = []
+
+        pdf_result = result.get('pdf_result') or {}
+
+        response = ChatResponse(
+            response=str(result.get('response_translated', '')),
+            detected_language=detected_lang,
+            sources=sources,
+            is_pdf_request=bool(result.get('is_pdf_request', False)),
+            pdf_path=pdf_result.get('pdf_path'),
+            pdf_name=pdf_result.get('pdf_name')
+        )
+
+        print("✅ Response Sent To Frontend")
+
+        return response
+
+    except Exception as e:
+
+        import traceback
+
+        print("\n❌ BACKEND ERROR:")
+        traceback.print_exc()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 @app.get("/languages")
 async def get_supported_languages():
     """Get list of supported languages"""
